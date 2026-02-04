@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Hype Detector | How Much BS Is In Your Text?</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 150px;
+            border: 2px solid #e1e5e9;
+            border-radius: 15px;
+            padding: 20px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .analyze-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .results {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+            display: none;
+        }
+        
+        .hype-score {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .score-low { color: #28a745; }
+        .score-medium { color: #ffc107; }
+        .score-high { color: #fd7e14; }
+        .score-extreme { color: #dc3545; }
+        
+        .verdict {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .details {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: left;
+        }
+        
+        .details h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .buzzword-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .buzzword {
+            background: #e9ecef;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .examples {
+            text-align: left;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .example-btn {
+            background: none;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #495057;
+            transition: all 0.2s ease;
+        }
+        
+        .example-btn:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI Hype Detector</h1>
+        <p class="subtitle">Paste any text to see how much AI buzzword BS it contains</p>
+        
+        <textarea id="textInput" placeholder="Paste your AI startup pitch, job posting, or blog post here...
+
+Try some examples:
+• Job posting: 'We're seeking a ninja rockstar to leverage AI/ML synergies...'
+• Startup pitch: 'Our revolutionary AI will disrupt everything using quantum blockchain...'
+• Corporate speak: 'Implementing next-generation AI solutions for digital transformation...'"></textarea>
+        
+        <div class="examples">
+            <strong>Quick examples:</strong><br>
+            <button class="example-btn" onclick="setExample(0)">Startup Pitch</button>
+            <button class="example-btn" onclick="setExample(1)">Job Posting</button>
+            <button class="example-btn" onclick="setExample(2)">Corporate AI</button>
+            <button class="example-btn" onclick="setExample(3)">Realistic Text</button>
+        </div>
+        
+        <button class="analyze-btn" onclick="analyzeText()">Detect Hype →</button>
+        
+        <div id="results" class="results">
+            <div class="hype-score" id="score">0%</div>
+            <div class="verdict" id="verdict">Analysis complete</div>
+            <div class="details">
+                <h3>🔍 Detection Breakdown</h3>
+                <div id="breakdown"></div>
+                <h3>🚩 Buzzwords Found</h3>
+                <div id="buzzwords" class="buzzword-list"></div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Made by <a href="https://twitter.com/MoltFire">@MoltFire</a> • 
+            <a href="https://www.practicalsystems.io">Practical Systems</a>
+        </div>
+    </div>
+
+    <script>
+        const examples = [
+            "We're revolutionizing the AI landscape with our groundbreaking, next-generation machine learning platform that leverages cutting-edge neural networks and quantum computing synergies to deliver unprecedented, game-changing results. Our disruptive technology will transform industries and unlock infinite potential through innovative AI-driven solutions.",
+            
+            "Seeking a 10x ninja rockstar AI/ML engineer to join our unicorn startup! Must have deep expertise in transformative AI technologies, blockchain integration, and revolutionary machine learning algorithms. We're disrupting everything with our next-gen AI that will change the world forever.",
+            
+            "Our enterprise-grade AI solution delivers intelligent automation and advanced analytics to optimize your digital transformation journey. Powered by proprietary algorithms and next-generation machine learning, we're enabling businesses to unlock the full potential of their data through innovative AI-driven insights.",
+            
+            "We built a Python script that analyzes customer support tickets and suggests relevant help articles. It uses basic NLP to match keywords and has reduced our response time by about 30%. The system isn't perfect but it handles the most common questions pretty well."
+        ];
+        
+        function setExample(index) {
+            document.getElementById('textInput').value = examples[index];
+        }
+        
+        function analyzeText() {
+            const text = document.getElementById('textInput').value.trim();
+            if (!text) {
+                alert('Please enter some text to analyze!');
+                return;
+            }
+            
+            const analysis = calculateHypeScore(text);
+            displayResults(analysis);
+        }
+        
+        function calculateHypeScore(text) {
+            const words = text.toLowerCase().split(/\s+/);
+            const totalWords = words.length;
+            
+            const buzzwords = [
+                // AI/Tech Buzzwords (high weight)
+                { words: ['revolutionary', 'groundbreaking', 'disruptive', 'game-changing', 'transformative'], weight: 15, category: 'Hyperbole' },
+                { words: ['next-generation', 'next-gen', 'cutting-edge', 'state-of-the-art', 'advanced'], weight: 10, category: 'Tech Speak' },
+                { words: ['ai-powered', 'ai-driven', 'intelligent', 'smart', 'cognitive'], weight: 8, category: 'AI Buzzwords' },
+                { words: ['synergy', 'synergies', 'ecosystem', 'leverage', 'optimize'], weight: 12, category: 'Corporate Speak' },
+                { words: ['quantum', 'blockchain', 'neural', 'deep learning', 'machine learning'], weight: 6, category: 'Tech Terms' },
+                { words: ['unicorn', 'ninja', 'rockstar', '10x', 'guru'], weight: 20, category: 'Startup Cringe' },
+                { words: ['infinite', 'unlimited', 'unprecedented', 'revolutionary', 'paradigm'], weight: 15, category: 'Impossible Claims' },
+                { words: ['transform', 'disrupt', 'innovate', 'reimagine', 'revolutionize'], weight: 10, category: 'Action Buzzwords' },
+                { words: ['proprietary', 'enterprise-grade', 'scalable', 'robust', 'seamless'], weight: 8, category: 'Quality Claims' },
+                { words: ['unlock potential', 'game changer', 'digital transformation', 'industry 4.0'], weight: 12, category: 'Phrases' }
+            ];
+            
+            let totalScore = 0;
+            let foundBuzzwords = [];
+            let breakdown = {};
+            
+            buzzwords.forEach(group => {
+                group.words.forEach(buzzword => {
+                    const regex = new RegExp('\\b' + buzzword.replace(/\s+/g, '\\s+') + '\\b', 'gi');
+                    const matches = text.match(regex);
+                    if (matches) {
+                        const count = matches.length;
+                        const score = count * group.weight;
+                        totalScore += score;
+                        
+                        foundBuzzwords.push({
+                            word: buzzword,
+                            count: count,
+                            category: group.category
+                        });
+                        
+                        if (!breakdown[group.category]) {
+                            breakdown[group.category] = 0;
+                        }
+                        breakdown[group.category] += score;
+                    }
+                });
+            });
+            
+            // Word count penalty for short texts with high buzzword density
+            const buzzwordDensity = foundBuzzwords.length / totalWords;
+            if (buzzwordDensity > 0.1) {
+                totalScore += (buzzwordDensity - 0.1) * 100;
+            }
+            
+            // Cap the score at 100%
+            const finalScore = Math.min(Math.round(totalScore), 100);
+            
+            return {
+                score: finalScore,
+                buzzwords: foundBuzzwords,
+                breakdown: breakdown,
+                wordCount: totalWords,
+                density: buzzwordDensity
+            };
+        }
+        
+        function displayResults(analysis) {
+            const { score, buzzwords, breakdown, wordCount, density } = analysis;
+            
+            // Show results
+            document.getElementById('results').style.display = 'block';
+            
+            // Score and verdict
+            const scoreEl = document.getElementById('score');
+            const verdictEl = document.getElementById('verdict');
+            
+            scoreEl.textContent = score + '%';
+            
+            // Remove existing score classes
+            scoreEl.className = 'hype-score';
+            
+            if (score <= 20) {
+                scoreEl.classList.add('score-low');
+                verdictEl.textContent = '✅ Refreshingly honest! Low hype detected.';
+            } else if (score <= 45) {
+                scoreEl.classList.add('score-medium');
+                verdictEl.textContent = '⚠️ Some buzzwords detected. Moderate hype levels.';
+            } else if (score <= 70) {
+                scoreEl.classList.add('score-high');
+                verdictEl.textContent = '🚨 High hype alert! Buzzword overload detected.';
+            } else {
+                scoreEl.classList.add('score-extreme');
+                verdictEl.textContent = '💀 EXTREME HYPE! This text is 99% buzzwords, 1% meaning.';
+            }
+            
+            // Breakdown
+            const breakdownEl = document.getElementById('breakdown');
+            let breakdownHTML = '';
+            for (const [category, points] of Object.entries(breakdown)) {
+                breakdownHTML += `<div><strong>${category}:</strong> +${points} points</div>`;
+            }
+            breakdownHTML += `<div><strong>Total Words:</strong> ${wordCount}</div>`;
+            breakdownHTML += `<div><strong>Buzzword Density:</strong> ${(density * 100).toFixed(1)}%</div>`;
+            breakdownEl.innerHTML = breakdownHTML;
+            
+            // Buzzwords
+            const buzzwordsEl = document.getElementById('buzzwords');
+            if (buzzwords.length > 0) {
+                buzzwordsEl.innerHTML = buzzwords
+                    .map(b => `<span class="buzzword">${b.word}${b.count > 1 ? ' (' + b.count + ')' : ''}</span>`)
+                    .join('');
+            } else {
+                buzzwordsEl.innerHTML = '<span class="buzzword">None found! 🎉</span>';
+            }
+            
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
